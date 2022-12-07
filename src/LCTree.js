@@ -1,3 +1,5 @@
+import { Tree } from './Tree.js'
+
 /**
  * LCTree類別 - 樹狀選單
  */
@@ -7,15 +9,40 @@ export class LCTree {
      * @param {string} 裝載容器的選擇器
      * @param {Array.<Object>} 樹狀選單資料
      */
-    constructor(containerSelector, arrData) {
+    constructor(containerSelector, arrData, options = {}) {
         this.container = document.querySelector(containerSelector)
-
+        
         this.arrData = JSON.parse(JSON.stringify(arrData))
 
+        this.css = Object.assign({
+            Hide: {
+                display: 'none'
+            },
+            IconFolderClose: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAAAW0lEQVRIie3VMQ5AQBQE0MfFtLj/CXYdQKGnoUU2vojsJFNsM+93yx8yImM96YyuFLgaP7qUInfGS5oxNPsjKjka0EaOV6ACFajAl4ApcD/DgOT5DyehDzz+pWxDZ0aAC5Uj5QAAAABJRU5ErkJggg==',
+            IconFolderOpen: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABmJLR0QA/wD/AP+gvaeTAAAA2ElEQVRIie3VP0vCURjF8Q8iEjQFDm4Nbb2JCCLwz6tp6zUJBtEuLe01N2XhoENDUISow68HfmCK5fPb/MKBO51zn3O597JnCzoYYfGL3nG2a8A689DHriGbzP+qN3SrDFjgYV3AN67Q/H8Zq9RK62s84ylpkhHaMcEXjjBOMg+9xAT3OEUro5YSjQi4Qy/ZHG5hjhN53Zd1Cec4rsB8inoNQ9XUM8AszmDl9iXQj8UhPuXWM0Gd4qJd4CB59zeYRUCl9cCj3HrGfuoJeopnNsP8VfGB7dmeJRnZ2UuriPksAAAAAElFTkSuQmCC',
+            MainArea: {
+                height: '100%',
+                background: '#EEE',
+            },
+            MainAreaRow: {
+                display: 'flex'
+            },
+            MainAreaRowIcon: {
+                marginRight: '5px'
+            },
+            MainAreaRowIconImage: {
+                
+            },
+            MainAreaRowText: {
+
+            }
+        }, options.css || {})
+        
         //建立樹狀結構根節點
         this.structure = new Tree(0, '根')
 
         this.Init()
+        this.Render()
     }
 
     /**
@@ -39,93 +66,44 @@ export class LCTree {
             .filter(a => a.parent_id === data.id)
             .forEach(d => this.InsertNode(data.id, d))
     }
+    
+    Render() {
+        let fragment = document.createDocumentFragment()
+        
+        let mainArea = document.createElement('div')
+        mainArea.classList.add('LCTreeMainArea')
+        Object.assign(mainArea.style, this.css.MainArea)
+        for (let node of this.structure.preOrderTraversal()) {
+            //console.table({key: node.key, value: node.value, depth: node.depth})
+            
+            if(node.depth > 0) { //根節點不用渲染（要依需求調整）
+                let mainAreaRow = document.createElement('div')
+                mainAreaRow.classList.add('LCTreeMainAreaRow')
+                Object.assign(mainAreaRow.style, { paddingLeft: `${(node.depth - 1) * 20}px` }, this.css.MainAreaRow)
+                
+                let mainAreaRowIcon = document.createElement('div')
+                mainAreaRowIcon.classList.add('LCTreeMainAreaRowIcon')
+                Object.assign(mainAreaRowIcon.style, this.css.MainAreaRowIcon)
+                let mainAreaRowIconImage = document.createElement('img')
+                mainAreaRowIconImage.classList.add('LCTreeMainAreaRowIconImage')
+                Object.assign(mainAreaRowIconImage.style, this.css.MainAreaRowIconImage)
+                mainAreaRowIconImage.src = this.css.IconFolderClose
+                mainAreaRowIcon.appendChild(mainAreaRowIconImage)
+                mainAreaRow.appendChild(mainAreaRowIcon)
 
-}
-
-class TreeNode {
-    constructor(key, value = key, parent = null) {
-        this.key = key;
-        this.value = value;
-        this.parent = parent;
-        this.children = [];
-    }
-
-    get isRoot() {
-        return this.parent === null;
-    }
-
-    get isLeaf() {
-        return this.children.length === 0;
-    }
-
-    get hasChildren() {
-        return !this.isLeaf;
-    }
-
-    get depth() {
-        let dist = 0;
-        dist = this.calcDepth(this, dist)
-        return dist;
-    }
-
-    calcDepth(node, depth) {
-        if (node.isRoot) {
-            return depth;
+                let mainAreaRowText = document.createElement('div')
+                mainAreaRowText.classList.add('LCTreeMainAreaRowText')
+                Object.assign(mainAreaRowText.style, this.css.MainAreaRowText)
+                mainAreaRowText.innerText = node.value
+                
+                mainAreaRow.appendChild(mainAreaRowText)
+                
+                
+                mainArea.appendChild(mainAreaRow)
+            }            
         }
-        else {
-            return this.calcDepth(node.parent, depth + 1)
-        }
-    }
-}
 
-class Tree {
-    constructor(key, value = key) {
-        this.root = new TreeNode(key, value);
-    }
-
-    *preOrderTraversal(node = this.root) {
-        yield node;
-        if (node.children.length) {
-            for (let child of node.children) {
-                yield* this.preOrderTraversal(child);
-            }
-        }
-    }
-
-    *postOrderTraversal(node = this.root) {
-        if (node.children.length) {
-            for (let child of node.children) {
-                yield* this.postOrderTraversal(child);
-            }
-        }
-        yield node;
-    }
-
-    insert(parentNodeKey, key, value = key) {
-        for (let node of this.preOrderTraversal()) {
-            if (node.key === parentNodeKey) {
-                node.children.push(new TreeNode(key, value, node));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    remove(key) {
-        for (let node of this.preOrderTraversal()) {
-            const filtered = node.children.filter((c) => c.key !== key);
-            if (filtered.length !== node.children.length) {
-                node.children = filtered;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    find(key) {
-        for (let node of this.preOrderTraversal()) {
-            if (node.key === key) return node;
-        }
-        return undefined;
+        fragment.appendChild(mainArea)
+        this.container.appendChild(fragment)
     }
 }
