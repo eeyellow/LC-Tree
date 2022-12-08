@@ -1,9 +1,11 @@
 export class TreeNode {
-    constructor(key, value = key, parent = null) {
+    constructor(key, value = key, props = {}, parent = null) {
         this.key = key;
         this.value = value;
         this.parent = parent;
         this.children = [];
+
+        this.isOpen = props.isOpen
     }
 
     get isRoot() {
@@ -18,6 +20,8 @@ export class TreeNode {
         return !this.isLeaf;
     }
 
+    //-----------------------------------------------------
+
     get depth() {
         let dist = 0;
         dist = this.calcDepth(this, dist)
@@ -31,5 +35,18 @@ export class TreeNode {
         else {
             return this.calcDepth(node.parent, depth + 1)
         }
+    }
+
+    get allParent () {
+        return this.findParent(this, [])
+    }
+
+    findParent (node, result) {
+        let currentParent = node.parent
+        if (currentParent) {
+            result.push(currentParent)
+            this.findParent(currentParent, result)
+        }
+        return result
     }
 }

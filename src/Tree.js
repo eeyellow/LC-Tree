@@ -1,8 +1,8 @@
 import { TreeNode } from './TreeNode.js'
 
 export class Tree {
-    constructor(key, value = key) {
-        this.root = new TreeNode(key, value);
+    constructor(key, value = key, props = {}) {
+        this.root = new TreeNode(key, value, props);
     }
 
     *preOrderTraversal(node = this.root) {
@@ -23,10 +23,10 @@ export class Tree {
         yield node;
     }
 
-    insert(parentNodeKey, key, value = key) {
+    insert(parentNodeKey, key, value = key, props) {
         for (let node of this.preOrderTraversal()) {
             if (node.key === parentNodeKey) {
-                node.children.push(new TreeNode(key, value, node));
+                node.children.push(new TreeNode(key, value, props, node));
                 return true;
             }
         }
@@ -49,5 +49,42 @@ export class Tree {
             if (node.key === key) return node;
         }
         return undefined;
+    }
+
+    //-----------------------------------------------------
+
+    /**
+     * 切換節點的Boolean屬性
+     * @param {Object} param - 物件參數
+     * @param {integer} param.key - 節點的Key值
+     * @param {string} param.prop - 節點的Boolean屬性名稱
+     */
+    toggleProp(param) {        
+        let targetNode = this.find(param.key * 1)
+        if (targetNode && targetNode.hasOwnProperty(param.prop) && targetNode[param.prop] !== undefined) {
+            targetNode[param.prop] = !targetNode[param.prop]
+        }
+    }
+
+    /**
+     * 全部展開
+     */
+    AllExpend() {
+        for (let node of this.preOrderTraversal()) {
+            if(node.hasOwnProperty('isOpen') && node['isOpen'] !== undefined){
+                node['isOpen'] = true
+            }
+        }
+    }
+
+    /**
+     * 全部折疊
+     */
+    AllShrink() {
+        for (let node of this.preOrderTraversal()) {
+            if(node.hasOwnProperty('isOpen') && node['isOpen'] !== undefined){
+                node['isOpen'] = false
+            }
+        }
     }
 }
