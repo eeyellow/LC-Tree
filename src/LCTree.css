@@ -1,13 +1,11 @@
 /* 工具選單區 */
 .LCTree-ToolArea{
     display: flex;
-    background: #EEE;
 }
 
 /* 主內容區 */
-.LCTree-MainArea{    
+.LCTree-MainArea{
     height: 100%;
-    background: #EEE;
 }
 .LCTree-MainAreaRow{
     display: flex;
@@ -26,4 +24,5 @@
 .LCTree-Icon{
     width: 20px;
     height: 20px;
+    margin-right: 5px;
 }
