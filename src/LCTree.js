@@ -51,23 +51,6 @@ export class LCTree {
         // 建立樹狀結構根節點
         this.store = new Tree(0, '根')
 
-        this.storeproxy = new Proxy(this.store, {
-            get (target, prop, receiver) {
-                // debugger;
-                const value = Reflect.get(...arguments);
-                return typeof value === 'function' ? value.bind(target) : value;
-            }
-            // ,set: (target, property, value) => {
-            //     debugger;
-            //     // 觸發回調函數
-            //     this.StoreProxyCallback(property, value);
-            //     // 修改物件屬性
-            //     target[property] = value;
-            //
-            //     return true;
-            // }
-        });
-
         this.Init()
         this.RenderContainer()
         this.RenderToolArea()
@@ -94,10 +77,6 @@ export class LCTree {
         this.arrData
             .filter(a => a.parent_id === data.id)
             .forEach(d => this.InsertNode(data.id, d))
-    }
-
-    StoreProxyCallback (property, value) {
-        debugger
     }
 
     /**
@@ -210,12 +189,8 @@ export class LCTree {
         // #endregion HTML
 
         // #region Event
-        fragment.querySelectorAll(`.${this.css.MainAreaRow}`).forEach(t => {
-            t.addEventListener('click', e => {
-                const targetKey = e.currentTarget.dataset.key
-                this.store.toggleProp({ key: targetKey, prop: 'isOpen' })
-                this.RenderMainArea()
-            })
+        this.container.querySelector(`.${this.css.MainArea}`).addEventListener('click', e => {
+            // debugger
         })
 
         // #endregion Event
