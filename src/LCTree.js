@@ -62,9 +62,10 @@ export class LCTree {
      */
     Init () {
         // 找出根節點的子節點，並接著遞迴處理
-        this.arrData
-            .filter(a => a.parent_id === 0)
-            .forEach(d => this.InsertNode(0, d))
+        const NodesDepth1 = this.arrData.filter(a => a.parent_id === 0)
+        for (const data of NodesDepth1) {
+            this.InsertNode(0, data)
+        }
     }
 
     /**
@@ -74,9 +75,10 @@ export class LCTree {
      */
     InsertNode (parentId, data) {
         this.store.insert(parentId, data.id, data.name, { ...data });
-        this.arrData
-            .filter(a => a.parent_id === data.id)
-            .forEach(d => this.InsertNode(data.id, d))
+        const targetDatas = this.arrData.filter(a => a.parent_id === data.id)
+        for (const d of targetDatas) {
+            this.InsertNode(data.id, d)
+        }
     }
 
     /**
