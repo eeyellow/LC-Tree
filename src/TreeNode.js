@@ -4,9 +4,8 @@ export class TreeNode {
         this.value = value;
         this.parent = parent;
         this.children = [];
-
-        this.isOpen = props.isOpen
-        this.isCheck = props.isCheck
+        this._isOpen = props.isOpen;
+        this._isCheck = props.isCheck;
     }
 
     get isRoot () {
@@ -21,32 +20,40 @@ export class TreeNode {
         return !this.isLeaf;
     }
 
-    // -----------------------------------------------------
+    get isOpen () {
+        return this._isOpen;
+    }
+
+    set isOpen (value) {
+        this._isOpen = value;
+    }
+
+    get isCheck () {
+        return this._isCheck;
+    }
+
+    set isCheck (value) {
+        this._isCheck = value;
+    }
 
     get depth () {
-        let dist = 0;
-        dist = this.calcDepth(this, dist)
-        return dist;
+        return this.calcDepth(this, 0)
     }
 
     calcDepth (node, depth) {
         if (node.isRoot) {
             return depth;
-        } else {
-            return this.calcDepth(node.parent, depth + 1)
         }
+        return this.calcDepth(node.parent, depth + 1)
     }
 
     get allParent () {
-        return this.findParent(this, [])
-    }
-
-    findParent (node, result) {
-        const currentParent = node.parent
-        if (currentParent) {
-            result.push(currentParent)
-            this.findParent(currentParent, result)
+        const result = [];
+        let currentParent = this.parent;
+        while (currentParent) {
+            result.push(currentParent);
+            currentParent = currentParent.parent;
         }
-        return result
+        return result;
     }
 }
