@@ -13,7 +13,26 @@ export class LCTree {
         const o = this
         this.container = document.querySelector(containerSelector)
 
-        this.arrData = JSON.parse(JSON.stringify(arrData))
+        //將資料轉為代理物件
+        let tempArr = []        
+        JSON.parse(JSON.stringify(arrData)).forEach(d => {
+            let proxyObj = new Proxy(d, {
+                set: (target, property, value, receiver) => {
+                    const result = Reflect.set(target, property, value, receiver);                
+                    this.Init()                              
+                    return result
+                }
+            })
+
+            tempArr.push(proxyObj)
+        })
+        this.arrData = new Proxy(tempArr, {
+            set: (target, property, value, receiver) => {
+                const result = Reflect.set(target, property, value, receiver);                
+                this.Init()                              
+                return result
+            }
+        })
 
         this.settings = Object.assign({
             ShowTypeIcon: true
@@ -22,6 +41,7 @@ export class LCTree {
         this.css = Object.assign({
             Hide: 'LCTree-Hide',
             Icon: 'LCTree-Icon',
+            Eventable: 'LCTree-Eventable',
 
             ToolArea: 'LCTree-ToolArea',
             ToolAreaExpend: 'LCTree-ToolAreaExpend',
@@ -30,6 +50,9 @@ export class LCTree {
             MainArea: 'LCTree-MainArea',
             MainAreaRow: 'LCTree-MainAreaRow',
             MainAreaRowIcon: 'LCTree-MainAreaRowIcon',
+            MainAreaRowIconCheckbox: 'LCTree-MainAreaRowIconCheckbox',
+            MainAreaRowIconFolderOpen: 'LCTree-MainAreaRowIconFolderOpen',
+            MainAreaRowIconFolderClose: 'LCTree-MainAreaRowIconFolderClose',
             MainAreaRowText: 'LCTree-MainAreaRowText',
         }, options.css || {})
 
@@ -47,25 +70,30 @@ export class LCTree {
             CheckboxDisabledUnchecked: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAF1JREFUWEft17ENACAIRFHZhf0nul20spKYSDRYfHvhfKFAk9Rb4TECIBAJuPuTsZS01A2H8JsAUeIMzXzQsQABEEAAAQQQQACBcoHM9rO7c7wRlQW43XhXj68ZAgN3FeqBuueZgwAAAABJRU5ErkJggg==',
             CheckboxDisabledChecked: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAQ1JREFUWEftl9sNgzAMRS+sgOCfxy4sAbMgZgGGYBbCBMAMrRyJKk1DSSClrRR+eFn29fFVAh5j7IYvHp4T4AioCGRZ9hFbMsZe8ipN+DMCVIqPoFkbMibgBPwlgWma0Pc9iqJ42OUyD1BxKjyOI6qqQlmWXMQlAuZ55gWHYUCSJGjbFlEUXSPgXXFrBKijPM8RhuHTUiBiT9OUdy7HnB5B0zSo6xpyAZ3iVggsy8LNRfON4xhd18H3/c2Zy6vlaQKUUO6WnpHbt7CLIqwIoIQiCbqX3b61T1gTIJKga5XhVCKsClhJ0DkIAq3N0boArapCkBNwmIAp6r144y+ivYSm77UFmCY+E+9+zRyBO5CgU5DFCIwIAAAAAElFTkSuQmCC',
         }, options.icon)
-
-        // 建立樹狀結構根節點
-        this.store = new Tree(0, '根')
-
-        this.Init()
-        this.RenderContainer()
-        this.RenderToolArea()
-        this.RenderMainArea()
+      
+        this.Init(true)
     }
 
     /**
      * Store初始化
      */
-    Init () {
+    Init (isInit = false) {
+        // 建立樹狀結構根節點
+        this.store = new Tree(0, '根')
+
         // 找出根節點的子節點，並接著遞迴處理
         const NodesDepth1 = this.arrData.filter(a => a.parent_id === 0)
         for (const data of NodesDepth1) {
             this.InsertNode(0, data)
         }
+
+        // 渲染畫面
+        if(isInit){
+            this.RenderContainer()
+            this.RenderToolArea()
+        }
+        
+        this.RenderMainArea()
     }
 
     /**
@@ -128,13 +156,11 @@ export class LCTree {
         // #endregion HTML
 
         // #region Event
-        toolExpend.addEventListener('click', e => {
-            this.store.AllExpend()
-            this.RenderMainArea()
+        toolExpend.addEventListener('click', e => {            
+            this.ToolAllExpend()
         })
-        toolShrink.addEventListener('click', e => {
-            this.store.AllShrink()
-            this.RenderMainArea()
+        toolShrink.addEventListener('click', e => {            
+            this.ToolAllShrink()
         })
         // #endregion Event
 
@@ -165,13 +191,32 @@ export class LCTree {
 
                 const mainAreaRowIconCheckbox = document.createElement('img')
                 mainAreaRowIconCheckbox.classList.add(this.css.Icon)
-                mainAreaRowIconCheckbox.src = node.isCheck ? this.icon.CheckboxDisabledChecked : this.icon.CheckboxUnchecked
+                mainAreaRowIconCheckbox.classList.add(this.css.Eventable)
+                mainAreaRowIconCheckbox.classList.add(this.css.MainAreaRowIconCheckbox)
+                if(node.isCheck){
+                    mainAreaRowIconCheckbox.dataset.action = `uncheck`
+                    mainAreaRowIconCheckbox.src = this.icon.CheckboxDisabledChecked
+                }
+                else{
+                    mainAreaRowIconCheckbox.dataset.action = `check`
+                    mainAreaRowIconCheckbox.src = this.icon.CheckboxUnchecked
+                }                             
                 mainAreaRowIcon.appendChild(mainAreaRowIconCheckbox)
 
                 if (this.settings.ShowTypeIcon && !node.isLeaf) {
                     const mainAreaRowIconImage = document.createElement('img')
-                    mainAreaRowIconImage.classList.add(this.css.Icon)
-                    mainAreaRowIconImage.src = node.isOpen ? this.icon.FolderOpen : this.icon.FolderClose
+                    mainAreaRowIconCheckbox.classList.add(this.css.Icon)
+                    mainAreaRowIconImage.classList.add(this.css.Eventable)
+                    if(node.isOpen){
+                        mainAreaRowIconImage.dataset.action = `close`
+                        mainAreaRowIconImage.src = this.icon.FolderOpen
+                        mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderOpen)                        
+                    }
+                    else{
+                        mainAreaRowIconImage.dataset.action = `open`
+                        mainAreaRowIconImage.src = this.icon.FolderClose
+                        mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderClose)
+                    }                    
                     mainAreaRowIcon.appendChild(mainAreaRowIconImage)
                 }
 
@@ -191,12 +236,51 @@ export class LCTree {
         // #endregion HTML
 
         // #region Event
-        this.container.querySelector(`.${this.css.MainArea}`).addEventListener('click', e => {
-            // debugger
+        this.container.querySelector(`.${this.css.MainArea}`).addEventListener('click', e => {            
+            if(e.target.classList.contains(this.css.Eventable)){
+                const key = e.target.closest('.LCTree-MainAreaRow').dataset.key
+                const action = e.target.dataset.action
+                this.TriggerAction(key, action)
+            }
         })
 
         // #endregion Event
-
+        this.container.querySelector(`.${this.css.MainArea}`).innerHTML = null
         this.container.querySelector(`.${this.css.MainArea}`).replaceChildren(fragment)
+    }
+
+    /**
+     * 全部展開
+     */
+    ToolAllExpend () {
+        this.arrData.forEach(d => d.isOpen = true)        
+    }
+
+    /**
+     * 全部折疊
+     */
+    ToolAllShrink () {
+        this.arrData.forEach(d => d.isOpen = false)
+    }
+
+    /**
+     * 觸發動作
+     */
+    TriggerAction (key, action) {
+        let targetData = this.arrData.find(d => d.id == key)
+        switch(action){
+            case `check`:
+                targetData.isCheck = true;
+                break;
+            case `uncheck`:
+                targetData.isCheck = false;
+                break;
+            case `open`:
+                targetData.isOpen = true
+                break;
+            case `close`:
+                targetData.isOpen = false
+                break;
+        }
     }
 }

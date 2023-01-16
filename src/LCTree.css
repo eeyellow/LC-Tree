@@ -1,27 +1,31 @@
 /* 工具選單區 */
-.LCTree-ToolArea{
+.LCTree-ToolArea {
     display: flex;
 }
 
 /* 主內容區 */
-.LCTree-MainArea{
+.LCTree-MainArea {
     height: 100%;
 }
-.LCTree-MainAreaRow{
+
+.LCTree-MainAreaRow {
     display: flex;
 }
-.LCTree-MainAreaRowIcon{
+
+.LCTree-MainAreaRowIcon {
     margin-right: 5px;
-}
-.LCTree-MainAreaRowText{
 
 }
+
+
 
 /* 隱藏 */
-.LCTree-Hide{
+.LCTree-Hide {
     display: none
 }
-.LCTree-Icon{
+
+.LCTree-Icon {
+    cursor: pointer;
     width: 20px;
     height: 20px;
     margin-right: 5px;
