@@ -33,7 +33,7 @@ export class LCTree {
         this.arrData = new Proxy(tempArr, {
             set: (target, property, value, receiver) => {
                 const result = Reflect.set(target, property, value, receiver);
-                this.Init()
+                this.Update(target)
                 return result
             }
         })
@@ -82,32 +82,45 @@ export class LCTree {
      * Store初始化
      */
     Init () {
-        const count = 0;
-        this.vApp = this.createVApp(count);
+        this.vApp = this.createVApp(this.arrData);
         const $app = render(this.vApp);
         this.rootEl = mount($app, this.container);
     }
 
-    createVApp (value) {
+    createVApp (arrData) {
+        const childrenRows = arrData.map(d => {
+            return createElement('div', {
+                attrs: {
+                    class: `${this.css.MainAreaRow}`,
+                    'data-key': d.id
+                },
+                children: [
+                    createElement('img', {
+                        attrs: {
+                            src: `${this.icon.CheckboxDisabledChecked}`
+                        }
+                    }),
+                    createElement('label', {
+                        attrs: {
+                            class: `${this.css.MainAreaRowText}`
+                        },
+                        children: [
+                            String(`${d.name}`)
+                        ]
+                    }),
+                ]
+            })
+        })
         return createElement('div', {
             attrs: {
-                id: 'app',
-                dataCount: value,
+                class: `${this.css.MainArea}`
             },
-            children: [
-                createElement('input', {
-                    attrs: {
-                        id: 'appInput',
-                        value: value
-                    }
-                }),
-                String(value),
-            ],
+            children: childrenRows,
         })
     }
 
-    Update (value) {
-        const vNewApp = this.createVApp(value);
+    Update (arrData) {
+        const vNewApp = this.createVApp(arrData);
         const patch = diff(this.vApp, vNewApp);
         this.rootEl = patch(this.rootEl);
         this.vApp = vNewApp;
