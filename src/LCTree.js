@@ -2,12 +2,13 @@ import createElement from './vdom/createElement.js';
 import render from './vdom/render.js';
 import mount from './vdom/mount.js';
 import diff from './vdom/diff.js';
-import { Tree } from './Tree.js'
 
 /**
  * LCTree類別 - 樹狀選單
  */
 export class LCTree {
+    vApp
+    rootEl
     /**
      * 建構式
      * @param {string} 裝載容器的選擇器
@@ -74,241 +75,41 @@ export class LCTree {
             CheckboxDisabledChecked: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAQ1JREFUWEftl9sNgzAMRS+sgOCfxy4sAbMgZgGGYBbCBMAMrRyJKk1DSSClrRR+eFn29fFVAh5j7IYvHp4T4AioCGRZ9hFbMsZe8ipN+DMCVIqPoFkbMibgBPwlgWma0Pc9iqJ42OUyD1BxKjyOI6qqQlmWXMQlAuZ55gWHYUCSJGjbFlEUXSPgXXFrBKijPM8RhuHTUiBiT9OUdy7HnB5B0zSo6xpyAZ3iVggsy8LNRfON4xhd18H3/c2Zy6vlaQKUUO6WnpHbt7CLIqwIoIQiCbqX3b61T1gTIJKga5XhVCKsClhJ0DkIAq3N0boArapCkBNwmIAp6r144y+ivYSm77UFmCY+E+9+zRyBO5CgU5DFCIwIAAAAAElFTkSuQmCC',
         }, options.icon)
 
-        const createVApp = (count) => createElement('div', {
-            attrs: {
-                id: 'app',
-                dataCount: count,
-            },
-            children: [
-                createElement('input', {
-                    attrs: {
-                        id: 'appInput',
-                        value: count
-                    }
-                }),
-                String(count),
-            ],
-        });
-        const count = 0;
-        let vApp = createVApp(count);
-        const $app = render(vApp);
-        let $rootEl = mount($app, document.getElementById('app'));
-
-        setInterval(() => {
-            const vNewApp = createVApp(Math.floor(Math.random() * 10));
-            const patch = diff(vApp, vNewApp);
-            $rootEl = patch($rootEl);
-            vApp = vNewApp;
-        }, 1000);
-
-        this.Init(true)
+        this.Init()
     }
 
     /**
      * Store初始化
      */
-    Init (isInit = false) {
-        // 建立樹狀結構根節點
-        this.store = new Tree(0, '根')
-
-        // 找出根節點的子節點，並接著遞迴處理
-        const NodesDepth1 = this.arrData.filter(a => a.parent_id === 0)
-        for (const data of NodesDepth1) {
-            this.InsertNode(0, data)
-        }
-
-        // 渲染畫面
-        if (isInit) {
-            this.RenderContainer()
-            this.RenderToolArea()
-        }
-
-        this.RenderMainArea()
+    Init () {
+        const count = 0;
+        this.vApp = this.createVApp(count);
+        const $app = render(this.vApp);
+        this.rootEl = mount($app, this.container);
     }
 
-    /**
-     * 樹狀結構加入子節點到目標父節點中
-     * @param {*} parentId 父節點的Key
-     * @param {*} data 子節點的資料
-     */
-    InsertNode (parentId, data) {
-        this.store.insert(parentId, data.id, data.name, { ...data });
-        const targetDatas = this.arrData.filter(a => a.parent_id === data.id)
-        for (const d of targetDatas) {
-            this.InsertNode(data.id, d)
-        }
-    }
-
-    /**
-     * 渲染主容器
-     */
-    RenderContainer () {
-        const fragment = document.createDocumentFragment()
-
-        const toolArea = document.createElement('div')
-        toolArea.classList.add(this.css.ToolArea)
-        fragment.appendChild(toolArea)
-
-        const mainArea = document.createElement('div')
-        mainArea.classList.add(this.css.MainArea)
-        fragment.appendChild(mainArea)
-
-        this.container.appendChild(fragment)
-    }
-
-    /**
-     * 渲染工具區
-     */
-    RenderToolArea () {
-        // #region HTML
-        const fragment = document.createDocumentFragment()
-
-        // #region 選單工具區
-        const toolExpend = document.createElement('div')
-        toolExpend.classList.add(this.css.ToolAreaExpend)
-        const toolExpendImage = document.createElement('img')
-        toolExpendImage.classList.add(this.css.Icon)
-        toolExpendImage.src = this.icon.ToolExpend
-        toolExpendImage.title = '全部展開'
-        toolExpend.appendChild(toolExpendImage)
-        fragment.appendChild(toolExpend)
-
-        const toolShrink = document.createElement('div')
-        toolShrink.classList.add(this.css.ToolAreaShrink)
-        const toolShrinkImage = document.createElement('img')
-        toolShrinkImage.classList.add(this.css.Icon)
-        toolShrinkImage.src = this.icon.ToolShrink
-        toolShrinkImage.title = '全部折疊'
-        toolShrink.appendChild(toolShrinkImage)
-        fragment.appendChild(toolShrink)
-        // #endregion 選單工具區
-
-        // #endregion HTML
-
-        // #region Event
-        toolExpend.addEventListener('click', e => {
-            this.ToolAllExpend()
-        })
-        toolShrink.addEventListener('click', e => {
-            this.ToolAllShrink()
-        })
-        // #endregion Event
-
-        this.container.querySelector(`.${this.css.ToolArea}`).replaceChildren(fragment)
-    }
-
-    /**
-     * 渲染樹狀選單區
-     */
-    RenderMainArea () {
-        // #region HTML
-        const fragment = document.createDocumentFragment()
-
-        // #region 主內容(樹狀選單)區
-        for (const node of this.store.preOrderTraversal()) {
-            if (node.depth > 0) { // 根節點不用渲染（要依需求調整）
-                // 資料列
-                const mainAreaRow = document.createElement('div')
-                mainAreaRow.classList.add(this.css.MainAreaRow)
-                mainAreaRow.dataset.key = node.key
-                if (node.depth > 1 && !node.allParent.map(p => p.isOpen).filter(o => o !== undefined).reduce((pre, curr) => curr && pre)) {
-                    mainAreaRow.classList.add(this.css.Hide)
-                }
-                Object.assign(mainAreaRow.style, { paddingLeft: `${(node.depth - 1) * 20}px` })
-
-                const mainAreaRowIcon = document.createElement('div')
-                mainAreaRowIcon.classList.add(this.css.MainAreaRowIcon)
-
-                const mainAreaRowIconCheckbox = document.createElement('img')
-                mainAreaRowIconCheckbox.classList.add(this.css.Icon)
-                mainAreaRowIconCheckbox.classList.add(this.css.Eventable)
-                mainAreaRowIconCheckbox.classList.add(this.css.MainAreaRowIconCheckbox)
-                if (node.isCheck) {
-                    mainAreaRowIconCheckbox.dataset.action = `uncheck`
-                    mainAreaRowIconCheckbox.src = this.icon.CheckboxDisabledChecked
-                } else {
-                    mainAreaRowIconCheckbox.dataset.action = `check`
-                    mainAreaRowIconCheckbox.src = this.icon.CheckboxUnchecked
-                }
-                mainAreaRowIcon.appendChild(mainAreaRowIconCheckbox)
-
-                if (this.settings.ShowTypeIcon && !node.isLeaf) {
-                    const mainAreaRowIconImage = document.createElement('img')
-                    mainAreaRowIconCheckbox.classList.add(this.css.Icon)
-                    mainAreaRowIconImage.classList.add(this.css.Eventable)
-                    if (node.isOpen) {
-                        mainAreaRowIconImage.dataset.action = `close`
-                        mainAreaRowIconImage.src = this.icon.FolderOpen
-                        mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderOpen)
-                    } else {
-                        mainAreaRowIconImage.dataset.action = `open`
-                        mainAreaRowIconImage.src = this.icon.FolderClose
-                        mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderClose)
+    createVApp (value) {
+        return createElement('div', {
+            attrs: {
+                id: 'app',
+                dataCount: value,
+            },
+            children: [
+                createElement('input', {
+                    attrs: {
+                        id: 'appInput',
+                        value: value
                     }
-                    mainAreaRowIcon.appendChild(mainAreaRowIconImage)
-                }
-
-                mainAreaRow.appendChild(mainAreaRowIcon)
-
-                const mainAreaRowText = document.createElement('div')
-                mainAreaRowText.classList.add(this.css.MainAreaRowText)
-                mainAreaRowText.innerText = node.value
-                mainAreaRow.appendChild(mainAreaRowText)
-
-                fragment.appendChild(mainAreaRow)
-            }
-        }
-
-        // #endregion 主內容(樹狀選單)區
-
-        // #endregion HTML
-
-        // #region Event
-        this.container.querySelector(`.${this.css.MainArea}`).addEventListener('click', e => {
-            if (e.target.classList.contains(this.css.Eventable)) {
-                const key = e.target.closest('.LCTree-MainAreaRow').dataset.key
-                const action = e.target.dataset.action
-                this.TriggerAction(key, action)
-            }
+                }),
+                String(value),
+            ],
         })
-
-        // #endregion Event
-        this.container.querySelector(`.${this.css.MainArea}`).innerHTML = null
-        this.container.querySelector(`.${this.css.MainArea}`).replaceChildren(fragment)
     }
 
-    /**
-     * 全部展開
-     */
-    ToolAllExpend () {
-        this.arrData.forEach(d => d.isOpen = true)
-    }
-
-    /**
-     * 全部折疊
-     */
-    ToolAllShrink () {
-        this.arrData.forEach(d => d.isOpen = false)
-    }
-
-    /**
-     * 觸發動作
-     */
-    TriggerAction (key, action) {
-        const targetData = this.arrData.find(d => d.id == key)
-        switch (action) {
-        case `check`:
-            targetData.isCheck = true;
-            break;
-        case `uncheck`:
-            targetData.isCheck = false;
-            break;
-        case `open`:
-            targetData.isOpen = true
-            break;
-        case `close`:
-            targetData.isOpen = false
-            break;
-        }
+    Update (value) {
+        const vNewApp = this.createVApp(value);
+        const patch = diff(this.vApp, vNewApp);
+        this.rootEl = patch(this.rootEl);
+        this.vApp = vNewApp;
     }
 }
