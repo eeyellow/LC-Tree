@@ -1,3 +1,7 @@
+import createElement from './vdom/createElement.js';
+import render from './vdom/render.js';
+import mount from './vdom/mount.js';
+import diff from './vdom/diff.js';
 import { Tree } from './Tree.js'
 
 /**
@@ -10,16 +14,15 @@ export class LCTree {
      * @param {Array.<Object>} 樹狀選單資料
      */
     constructor (containerSelector, arrData, options = {}) {
-        const o = this
         this.container = document.querySelector(containerSelector)
 
-        //將資料轉為代理物件
-        let tempArr = []        
+        // 將資料轉為代理物件
+        const tempArr = []
         JSON.parse(JSON.stringify(arrData)).forEach(d => {
-            let proxyObj = new Proxy(d, {
+            const proxyObj = new Proxy(d, {
                 set: (target, property, value, receiver) => {
-                    const result = Reflect.set(target, property, value, receiver);                
-                    this.Init()                              
+                    const result = Reflect.set(target, property, value, receiver);
+                    this.Init()
                     return result
                 }
             })
@@ -28,8 +31,8 @@ export class LCTree {
         })
         this.arrData = new Proxy(tempArr, {
             set: (target, property, value, receiver) => {
-                const result = Reflect.set(target, property, value, receiver);                
-                this.Init()                              
+                const result = Reflect.set(target, property, value, receiver);
+                this.Init()
                 return result
             }
         })
@@ -70,7 +73,34 @@ export class LCTree {
             CheckboxDisabledUnchecked: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAF1JREFUWEft17ENACAIRFHZhf0nul20spKYSDRYfHvhfKFAk9Rb4TECIBAJuPuTsZS01A2H8JsAUeIMzXzQsQABEEAAAQQQQACBcoHM9rO7c7wRlQW43XhXj68ZAgN3FeqBuueZgwAAAABJRU5ErkJggg==',
             CheckboxDisabledChecked: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAQ1JREFUWEftl9sNgzAMRS+sgOCfxy4sAbMgZgGGYBbCBMAMrRyJKk1DSSClrRR+eFn29fFVAh5j7IYvHp4T4AioCGRZ9hFbMsZe8ipN+DMCVIqPoFkbMibgBPwlgWma0Pc9iqJ42OUyD1BxKjyOI6qqQlmWXMQlAuZ55gWHYUCSJGjbFlEUXSPgXXFrBKijPM8RhuHTUiBiT9OUdy7HnB5B0zSo6xpyAZ3iVggsy8LNRfON4xhd18H3/c2Zy6vlaQKUUO6WnpHbt7CLIqwIoIQiCbqX3b61T1gTIJKga5XhVCKsClhJ0DkIAq3N0boArapCkBNwmIAp6r144y+ivYSm77UFmCY+E+9+zRyBO5CgU5DFCIwIAAAAAElFTkSuQmCC',
         }, options.icon)
-      
+
+        const createVApp = (count) => createElement('div', {
+            attrs: {
+                id: 'app',
+                dataCount: count,
+            },
+            children: [
+                createElement('input', {
+                    attrs: {
+                        id: 'appInput',
+                        value: count
+                    }
+                }),
+                String(count),
+            ],
+        });
+        const count = 0;
+        let vApp = createVApp(count);
+        const $app = render(vApp);
+        let $rootEl = mount($app, document.getElementById('app'));
+
+        setInterval(() => {
+            const vNewApp = createVApp(Math.floor(Math.random() * 10));
+            const patch = diff(vApp, vNewApp);
+            $rootEl = patch($rootEl);
+            vApp = vNewApp;
+        }, 1000);
+
         this.Init(true)
     }
 
@@ -88,11 +118,11 @@ export class LCTree {
         }
 
         // 渲染畫面
-        if(isInit){
+        if (isInit) {
             this.RenderContainer()
             this.RenderToolArea()
         }
-        
+
         this.RenderMainArea()
     }
 
@@ -156,10 +186,10 @@ export class LCTree {
         // #endregion HTML
 
         // #region Event
-        toolExpend.addEventListener('click', e => {            
+        toolExpend.addEventListener('click', e => {
             this.ToolAllExpend()
         })
-        toolShrink.addEventListener('click', e => {            
+        toolShrink.addEventListener('click', e => {
             this.ToolAllShrink()
         })
         // #endregion Event
@@ -193,30 +223,28 @@ export class LCTree {
                 mainAreaRowIconCheckbox.classList.add(this.css.Icon)
                 mainAreaRowIconCheckbox.classList.add(this.css.Eventable)
                 mainAreaRowIconCheckbox.classList.add(this.css.MainAreaRowIconCheckbox)
-                if(node.isCheck){
+                if (node.isCheck) {
                     mainAreaRowIconCheckbox.dataset.action = `uncheck`
                     mainAreaRowIconCheckbox.src = this.icon.CheckboxDisabledChecked
-                }
-                else{
+                } else {
                     mainAreaRowIconCheckbox.dataset.action = `check`
                     mainAreaRowIconCheckbox.src = this.icon.CheckboxUnchecked
-                }                             
+                }
                 mainAreaRowIcon.appendChild(mainAreaRowIconCheckbox)
 
                 if (this.settings.ShowTypeIcon && !node.isLeaf) {
                     const mainAreaRowIconImage = document.createElement('img')
                     mainAreaRowIconCheckbox.classList.add(this.css.Icon)
                     mainAreaRowIconImage.classList.add(this.css.Eventable)
-                    if(node.isOpen){
+                    if (node.isOpen) {
                         mainAreaRowIconImage.dataset.action = `close`
                         mainAreaRowIconImage.src = this.icon.FolderOpen
-                        mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderOpen)                        
-                    }
-                    else{
+                        mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderOpen)
+                    } else {
                         mainAreaRowIconImage.dataset.action = `open`
                         mainAreaRowIconImage.src = this.icon.FolderClose
                         mainAreaRowIconImage.classList.add(this.css.MainAreaRowIconFolderClose)
-                    }                    
+                    }
                     mainAreaRowIcon.appendChild(mainAreaRowIconImage)
                 }
 
@@ -236,8 +264,8 @@ export class LCTree {
         // #endregion HTML
 
         // #region Event
-        this.container.querySelector(`.${this.css.MainArea}`).addEventListener('click', e => {            
-            if(e.target.classList.contains(this.css.Eventable)){
+        this.container.querySelector(`.${this.css.MainArea}`).addEventListener('click', e => {
+            if (e.target.classList.contains(this.css.Eventable)) {
                 const key = e.target.closest('.LCTree-MainAreaRow').dataset.key
                 const action = e.target.dataset.action
                 this.TriggerAction(key, action)
@@ -253,7 +281,7 @@ export class LCTree {
      * 全部展開
      */
     ToolAllExpend () {
-        this.arrData.forEach(d => d.isOpen = true)        
+        this.arrData.forEach(d => d.isOpen = true)
     }
 
     /**
@@ -267,20 +295,20 @@ export class LCTree {
      * 觸發動作
      */
     TriggerAction (key, action) {
-        let targetData = this.arrData.find(d => d.id == key)
-        switch(action){
-            case `check`:
-                targetData.isCheck = true;
-                break;
-            case `uncheck`:
-                targetData.isCheck = false;
-                break;
-            case `open`:
-                targetData.isOpen = true
-                break;
-            case `close`:
-                targetData.isOpen = false
-                break;
+        const targetData = this.arrData.find(d => d.id == key)
+        switch (action) {
+        case `check`:
+            targetData.isCheck = true;
+            break;
+        case `uncheck`:
+            targetData.isCheck = false;
+            break;
+        case `open`:
+            targetData.isOpen = true
+            break;
+        case `close`:
+            targetData.isOpen = false
+            break;
         }
     }
 }

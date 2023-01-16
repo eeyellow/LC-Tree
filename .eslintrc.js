@@ -51,6 +51,7 @@ module.exports = {
         'import/extensions': 'off',
         eqeqeq: 'warn',
         'object-shorthand': 'off',
-        'class-methods-use-this': 'off'
+        'class-methods-use-this': 'off',
+        'no-return-assign': 'off'
     }
 }
