@@ -113,10 +113,10 @@ export class Tree {
         }
     }
 
-    toArray (target = this.#root) {        
-        let nodes = this.preOrderTraversal(target)
-        let result = []
-        for(let node of nodes){
+    toArray (target = this.#root) {
+        const nodes = this.preOrderTraversal(target)
+        const result = []
+        for (const node of nodes) {
             result.push(node)
         }
         return result

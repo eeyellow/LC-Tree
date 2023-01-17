@@ -10,11 +10,11 @@
 
 .LCTree-MainAreaRow {
     display: flex;
+    margin-bottom: 5px;
 }
 
 .LCTree-MainAreaRowIcon {
     margin-right: 5px;
-
 }
 
 
