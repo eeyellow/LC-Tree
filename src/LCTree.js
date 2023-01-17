@@ -10,6 +10,7 @@ export class LCTree {
     #originData = []
     #arrData
     #settings = {
+        RootValue: "",
         ShowTypeIcon: true
     }
 
@@ -56,6 +57,11 @@ export class LCTree {
     constructor (containerSelector, arrData, options = {}) {
         // #region 資料與代理
         this.#originData = this.#CalculateDelete(this.#CalculateLeaf(this.#CalculateDepth(JSON.parse(JSON.stringify(arrData)))))
+        this.#originData.forEach(d => {
+            d.isCheck = d.isCheck || false
+            d.isOpen = d.isOpen || false
+            d.isDisabled = d.isDisabled || false
+        })
 
         // 將資料轉為代理物件
         const tempArr = []
@@ -102,6 +108,8 @@ export class LCTree {
         toolExpend.classList.add(this.#css.ToolAreaExpend)
         const toolExpendImage = document.createElement('img')
         toolExpendImage.classList.add(this.#css.Icon)
+        toolExpendImage.classList.add(this.#css.Eventable)
+        toolExpendImage.dataset.event = 'AllExpend'
         toolExpendImage.src = this.#icon.ToolExpend
         toolExpendImage.title = '全部展開'
         toolExpend.appendChild(toolExpendImage)
@@ -111,6 +119,8 @@ export class LCTree {
         toolShrink.classList.add(this.#css.ToolAreaShrink)
         const toolShrinkImage = document.createElement('img')
         toolShrinkImage.classList.add(this.#css.Icon)
+        toolShrinkImage.classList.add(this.#css.Eventable)
+        toolShrinkImage.dataset.event = 'AllShrink'
         toolShrinkImage.src = this.#icon.ToolShrink
         toolShrinkImage.title = '全部折疊'
         toolShrink.appendChild(toolShrinkImage)
@@ -129,6 +139,7 @@ export class LCTree {
         // #endregion HTML容器
 
         this.#Init()
+        this.#EventBind()
     }
 
     /**
@@ -157,7 +168,9 @@ export class LCTree {
                 children: [
                     SimpleVDom.createElement('img', {
                         attrs: {
-                            class: `${this.#css.Icon}`,
+                            class: `${this.#css.Icon} ${this.#css.Eventable}`,
+                            'data-event': 'Toggle',
+                            'data-property': 'isOpen',
                             src: `${d._IsLeaf
                                 ? this.#icon.Empty
                                 : d.isOpen
@@ -167,7 +180,9 @@ export class LCTree {
                     }),
                     SimpleVDom.createElement('img', {
                         attrs: {
-                            class: `${this.#css.Icon}`,
+                            class: `${this.#css.Icon} ${this.#css.Eventable}`,
+                            'data-event': 'Toggle',
+                            'data-property': 'isCheck',
                             src: `${this.#icon[checkStyle]}`
                         }
                     }),
@@ -194,7 +209,7 @@ export class LCTree {
      * 計算每筆資料的深度(Depth)
      * @param {*} arrData
      */
-    #CalculateDepth (arrData, parentId = 0, depth = 0, show = true) {
+    #CalculateDepth (arrData, parentId = this.#settings.RootValue, depth = 0, show = true) {
         const newData = []
         for (const data of arrData) {
             if (data.parent_id === parentId) {
@@ -262,6 +277,26 @@ export class LCTree {
     }
 
     /**
+     * 事件綁定
+     */
+    #EventBind () {
+        // 工具區
+        this.#container.querySelector(`.${this.#css.ToolArea}`).addEventListener('click', e => {
+            if (e.target.classList.contains(this.#css.Eventable) && e.target.dataset.event) {
+                this[e.target.dataset.event].apply(this)
+            }
+        })
+
+        // 主內容區
+        this.#container.querySelector(`.${this.#css.MainArea}`).addEventListener('click', e => {
+            if (e.target.classList.contains(this.#css.Eventable) && e.target.dataset.event) {
+                const key = e.target.closest(`.${this.#css.MainAreaRow}`).dataset.key * 1
+                this[e.target.dataset.event](key, e.target.dataset)
+            }
+        })
+    }
+
+    /**
      * 刪除
      * @param {*} targetId
      */
@@ -275,15 +310,15 @@ export class LCTree {
     /**
      * 切換屬性值
      * @param {*} targetId
-     * @param {*} property
+     * @param {*} args
      */
-    Toggle (targetId, property, value) {
+    Toggle (targetId, args) {
         const target = this.#arrData.find(a => a.id === targetId)
-        if (target && Object.prototype.hasOwnProperty.call(target, property)) {
-            if (value === undefined) {
-                target[property] = !target[property]
+        if (target && Object.prototype.hasOwnProperty.call(target, args.property)) {
+            if (args.value === undefined) {
+                target[args.property] = !target[args.property]
             } else {
-                target[property] = value
+                target[args.property] = args.value
             }
         }
     }
@@ -314,5 +349,12 @@ export class LCTree {
      */
     AllUncheck () {
         this.#arrData.forEach(d => d.isCheck = false)
+    }
+
+    /**
+     * 取得所有資料
+     */
+    GetData () {
+        return this.#originData
     }
 }

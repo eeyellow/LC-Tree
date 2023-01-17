@@ -52,6 +52,7 @@ module.exports = {
         eqeqeq: 'warn',
         'object-shorthand': 'off',
         'class-methods-use-this': 'off',
-        'no-return-assign': 'off'
+        'no-return-assign': 'off',
+        'prefer-spread': 'off'
     }
 }
