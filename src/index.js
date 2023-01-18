@@ -719,7 +719,7 @@ const arrData = [
         id: 44,
         parent_id: "",
         name: "使用者管理",
-        IsDelete: false
+        IsDelete: false,
     },
     {
         id: 45,

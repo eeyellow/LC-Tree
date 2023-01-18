@@ -56,35 +56,14 @@ export class LCTree {
      */
     constructor (containerSelector, arrData, options = {}) {
         // #region 資料與代理
-        this.#originData = this.#CalculateDelete(this.#CalculateLeaf(this.#CalculateDepth(JSON.parse(JSON.stringify(arrData)))))
-        this.#originData.forEach(d => {
-            d.isCheck = d.isCheck || false
-            d.isOpen = d.isOpen || false
-            d.isDisabled = d.isDisabled || false
-        })
+        this.#originData = JSON.parse(JSON.stringify(arrData))
+        this.#CalculateLeaf()
+            .#CalculateDepth()
+            .#CalculateDelete()
 
         // 將資料轉為代理物件
-        const tempArr = []
-        this.#originData.forEach(d => {
-            const proxyObj = new Proxy(d, {
-                set: (target, property, value, receiver) => {
-                    const result = Reflect.set(target, property, value, receiver);
-                    this.#originData = this.#CalculateDelete(this.#CalculateLeaf(this.#CalculateDepth(this.#originData)))
-                    this.#Update()
-                    return result
-                }
-            })
+        this.#CreateProxyData()
 
-            tempArr.push(proxyObj)
-        })
-        this.#arrData = new Proxy(tempArr, {
-            set: (target, property, value, receiver) => {
-                const result = Reflect.set(target, property, value, receiver);
-                this.#originData = this.#CalculateDelete(this.#CalculateLeaf(this.#CalculateDepth(JSON.parse(JSON.stringify(target)))))
-                this.#Update()
-                return result
-            }
-        })
         // #endregion 資料與代理
 
         // #region 覆寫預設值
@@ -99,42 +78,9 @@ export class LCTree {
 
         this.#container = document.querySelector(containerSelector)
 
-        // #region 工具區
-        const toolDiv = document.createElement('div')
-        toolDiv.classList = `${this.#css.ToolArea}`
+        this.#RenderToolArea()
 
-        const fragment = document.createDocumentFragment()
-        const toolExpend = document.createElement('div')
-        toolExpend.classList.add(this.#css.ToolAreaExpend)
-        const toolExpendImage = document.createElement('img')
-        toolExpendImage.classList.add(this.#css.Icon)
-        toolExpendImage.classList.add(this.#css.Eventable)
-        toolExpendImage.dataset.event = 'AllExpend'
-        toolExpendImage.src = this.#icon.ToolExpend
-        toolExpendImage.title = '全部展開'
-        toolExpend.appendChild(toolExpendImage)
-        fragment.appendChild(toolExpend)
-
-        const toolShrink = document.createElement('div')
-        toolShrink.classList.add(this.#css.ToolAreaShrink)
-        const toolShrinkImage = document.createElement('img')
-        toolShrinkImage.classList.add(this.#css.Icon)
-        toolShrinkImage.classList.add(this.#css.Eventable)
-        toolShrinkImage.dataset.event = 'AllShrink'
-        toolShrinkImage.src = this.#icon.ToolShrink
-        toolShrinkImage.title = '全部折疊'
-        toolShrink.appendChild(toolShrinkImage)
-        fragment.appendChild(toolShrink)
-
-        toolDiv.replaceChildren(fragment)
-        this.#container.appendChild(toolDiv)
-        // #endregion 工具區
-
-        // #region 主內容區
-        const containerDiv = document.createElement('div')
-        containerDiv.classList = `_temp_container`
-        this.#container.appendChild(containerDiv)
-        // #endregion 主內容區
+        this.#RenderMainArea()
 
         // #endregion HTML容器
 
@@ -206,55 +152,145 @@ export class LCTree {
     }
 
     /**
+     * 建立資料代理
+     */
+    #CreateProxyData () {
+        // 將資料轉為代理物件
+        const tempArr = []
+        this.#originData.forEach(d => {
+            const proxyObj = new Proxy(d, {
+                set: (target, property, value, receiver) => {
+                    const result = Reflect.set(target, property, value, receiver);
+                    this.#CalculateLeaf()
+                        .#CalculateDepth()
+                        .#CalculateDelete()
+                    this.#Update()
+                    return result
+                }
+            })
+
+            tempArr.push(proxyObj)
+        })
+        this.#arrData = new Proxy(tempArr, {
+            set: (target, property, value, receiver) => {
+                const result = Reflect.set(target, property, value, receiver);
+                this.#originData = JSON.parse(JSON.stringify(target))
+                this.#CalculateLeaf()
+                    .#CalculateDepth()
+                    .#CalculateDelete()
+                this.#Update()
+                return result
+            }
+        })
+    }
+
+    /**
+     * 渲染工具區
+     */
+    #RenderToolArea () {
+        const toolDiv = document.createElement('div')
+        toolDiv.classList = `${this.#css.ToolArea}`
+
+        const fragment = document.createDocumentFragment()
+        const toolExpend = document.createElement('div')
+        toolExpend.classList.add(this.#css.ToolAreaExpend)
+        const toolExpendImage = document.createElement('img')
+        toolExpendImage.classList.add(this.#css.Icon)
+        toolExpendImage.classList.add(this.#css.Eventable)
+        toolExpendImage.dataset.event = 'AllExpend'
+        toolExpendImage.src = this.#icon.ToolExpend
+        toolExpendImage.title = '全部展開'
+        toolExpend.appendChild(toolExpendImage)
+        fragment.appendChild(toolExpend)
+
+        const toolShrink = document.createElement('div')
+        toolShrink.classList.add(this.#css.ToolAreaShrink)
+        const toolShrinkImage = document.createElement('img')
+        toolShrinkImage.classList.add(this.#css.Icon)
+        toolShrinkImage.classList.add(this.#css.Eventable)
+        toolShrinkImage.dataset.event = 'AllShrink'
+        toolShrinkImage.src = this.#icon.ToolShrink
+        toolShrinkImage.title = '全部折疊'
+        toolShrink.appendChild(toolShrinkImage)
+        fragment.appendChild(toolShrink)
+
+        toolDiv.replaceChildren(fragment)
+        this.#container.appendChild(toolDiv)
+    }
+
+    /**
+     * 渲染主內容區
+     */
+    #RenderMainArea () {
+        const mainAreaContainer = this.#container.querySelector(`.${this.#css.MainArea}`)
+        if (mainAreaContainer) {
+            mainAreaContainer.remove()
+        }
+
+        const containerDiv = document.createElement('div')
+        containerDiv.classList = `_temp_container`
+        this.#container.appendChild(containerDiv)
+    }
+
+    /**
      * 計算每筆資料的深度(Depth)
      * @param {*} arrData
      */
-    #CalculateDepth (arrData, parentId = this.#settings.RootValue, depth = 0, show = true) {
-        const newData = []
-        for (const data of arrData) {
+    #CalculateDepth (parentId = this.#settings.RootValue, depth = 0, parentShow = true, parentOpen = true) {
+        let newData = []
+        for (const data of this.#originData) {
             if (data.parent_id === parentId) {
                 data._depth = depth
-                data._show = show
+                data._show = parentShow && parentOpen
+
+                data.isCheck = data.isCheck || false
+                data.isOpen = data.isOpen || false
+                data.isDisabled = data.isDisabled || false
 
                 newData.push(data)
 
-                newData.push(this.#CalculateDepth(arrData, data.id, depth + 1, data.isOpen && show))
+                newData.push(this.#CalculateDepth(data.id, depth + 1, parentShow, data.isOpen, false))
             }
         }
 
-        return newData.flat()
+        newData = newData.flat()
+        if (depth === 0) {
+            this.#originData = newData
+            return this
+        }
+        return newData
     }
 
     /**
      * 計算每筆資料是否為Leaf
      */
-    #CalculateLeaf (arrData) {
-        const hash = {};
-        for (const data of arrData) {
+    #CalculateLeaf () {
+        const hash = {}
+        for (const data of this.#originData) {
             if (!data.IsDelete && !hash[data.parent_id]) {
                 hash[data.parent_id] = true;
             }
         }
 
-        for (const data of arrData) {
+        for (const data of this.#originData) {
             data._IsLeaf = !hash[data.id];
         }
 
-        return arrData;
+        return this
     }
 
     /**
      * 計算每筆資料是否為Delete
      */
-    #CalculateDelete (arrData) {
-        for (const data of arrData) {
+    #CalculateDelete () {
+        for (const data of this.#originData) {
             if (!Object.prototype.hasOwnProperty.call(data, `IsDelete`)) {
                 data.IsDelete = false
             }
         }
 
         const hash = {}
-        for (const data of arrData) {
+        for (const data of this.#originData) {
             if (hash[data.parent_id]) {
                 hash[data.id] = true
                 data.IsDelete = true
@@ -263,7 +299,7 @@ export class LCTree {
             }
         }
 
-        return arrData
+        return this
     }
 
     /**
@@ -274,6 +310,16 @@ export class LCTree {
         const patch = SimpleVDom.diff(this.#vDom, vNewApp);
         this.#rootEl = patch(this.#rootEl);
         this.#vDom = vNewApp;
+    }
+
+    #Redraw () {
+        this.#CalculateLeaf()
+            .#CalculateDepth()
+            .#CalculateDelete()
+        this.#RenderMainArea()
+        this.#Init()
+        this.#CreateProxyData()
+        this.#EventBind()
     }
 
     /**
@@ -327,14 +373,16 @@ export class LCTree {
      * 全部展開
      */
     AllExpend () {
-        this.#arrData.forEach(d => d.isOpen = true)
+        this.#originData.forEach(d => d.isOpen = true)
+        this.#Redraw()
     }
 
     /**
      * 全部折疊
      */
     AllShrink () {
-        this.#arrData.forEach(d => d.isOpen = false)
+        this.#originData.forEach(d => d.isOpen = false)
+        this.#Redraw()
     }
 
     /**
